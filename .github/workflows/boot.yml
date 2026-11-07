@@ -1,0 +1,45 @@
+name: Boot
+
+on:
+  workflow_dispatch:
+    inputs:
+      tailscale-hostname:
+        description: "Tailscale hostname"
+        required: true
+        default: "github-actions-1"
+        type: string
+      tailscale-args:
+        description: "Tailscale args"
+        required: true
+        default: "--ssh"
+        type: string
+      sleep-duration:
+        description: "Sleep duration"
+        required: true
+        default: "15m"
+        type: string
+
+jobs:
+  boot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          hostname: ${{ inputs.tailscale-hostname }}
+          args:  ${{ inputs.tailscale-args }}
+
+      - name: Install SSH key
+        env:
+          ADMIN_SSH_PUBLIC_KEY: ${{ secrets.ADMIN_SSH_PUBLIC_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "$ADMIN_SSH_PUBLIC_KEY" >> ~/.ssh/authorized_keys
+          chmod 600 ~/.ssh/authorized_keys
+
+      - name: Sleep
+        env:
+          SLEEP_DURATION: ${{ inputs.sleep-duration }}
+        run: sleep "$SLEEP_DURATION"
